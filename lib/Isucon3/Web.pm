@@ -256,6 +256,7 @@ post '/memo' => [qw(session get_user require_user anti_csrf)] => sub {
     my $memo_id = $self->dbh->last_insert_id;
     $self->cache->incr('total_memos') unless scalar($c->req->param('is_private'));
     $self->cache->remove('index');
+    $self->cache->set('memo_' . $memo_id => { id => $memo_id, user => $c->stash->{user}->{id}, content => scalar $c->req->param('content'), is_private => scalar($c->req->param('is_private')) ? 1 : 0, created_at => ''});
     $c->redirect('/memo/' . $memo_id);
 };
 
@@ -263,10 +264,14 @@ get '/memo/:id' => [qw(session get_user)] => sub {
     my ($self, $c) = @_;
 
     my $user = $c->stash->{user};
-    my $memo = $self->dbh->select_row(
-        'SELECT id, user, content, is_private, created_at, updated_at FROM memos WHERE id=?',
-        $c->args->{id},
-    );
+    my $memo = $self->cache->get('memo_' . $c->args->{id});
+    unless ($memo) {
+        $memo = $self->dbh->select_row(
+            'SELECT id, user, content, is_private, created_at, updated_at FROM memos WHERE id=?',
+            $c->args->{id},
+        );
+        $self->cache->set('memo_' . $c->args->{id} => $memo) if $memo;
+    }
     unless ($memo) {
         $c->halt(404);
     }
