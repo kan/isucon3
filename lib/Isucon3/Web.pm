@@ -167,7 +167,7 @@ get '/recent/:page' => [qw(session get_user)] => sub {
     });
 };
 
-get '/signin' => [qw(session get_user)] => sub {
+get '/signin' => sub {
     my ($self, $c) = @_;
     $c->render('signin.tx', {});
 };
