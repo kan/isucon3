@@ -13,6 +13,7 @@ use IO::Handle;
 use Encode;
 use Time::Piece;
 use Text::Markdown::Discount 'markdown';
+use Cache::Memcached::Fast;
 
 sub load_config {
     my $self = shift;
@@ -41,6 +42,13 @@ sub dbh {
     };
 }
 
+sub cache {
+    my ($self) = @_;
+    $self->{_cache} ||= do {
+        Cache::Memcached::Fast->new({ servers => ['localhost:11211'] });
+    };
+}
+
 filter 'session' => sub {
     my ($app) = @_;
     sub {
@@ -58,10 +66,14 @@ filter 'get_user' => sub {
         my ($self, $c) = @_;
 
         my $user_id = $c->req->env->{"psgix.session"}->{user_id};
-        my $user = $self->dbh->select_row(
-            'SELECT * FROM users WHERE id=?',
-            $user_id,
-        );
+        my $user = $self->cache->get("user_$user_id");
+        unless ($user) {
+            $user = $self->dbh->select_row(
+                'SELECT * FROM users WHERE id=?',
+                $user_id,
+            );
+            $self->cache->set("user_$user_id" => $user);
+        }
         $c->stash->{user} = $user;
         $c->res->header('Cache-Control', 'private') if $user;
         $app->($self, $c);
