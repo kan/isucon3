@@ -11,3 +11,4 @@ requires "DBD::mysql";
 requires "Starman";
 requires "Plack::Session";
 requires "Cache::Memcached::Fast";
+requires "HTTP::Headers::Fast";

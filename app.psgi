@@ -2,6 +2,10 @@ use FindBin;
 use lib "$FindBin::Bin/extlib/lib/perl5";
 use lib "$FindBin::Bin/lib";
 use File::Basename;
+use HTTP::Headers::Fast;
+BEGIN {
+    unshift @HTTP::Headers::Fast::ISA, 'HTTP::Headers';
+}
 use Plack::Builder;
 use Isucon3::Web;
 use Plack::Session::Store::Cache;

@@ -451,6 +451,16 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 0
       Time::Local 0
       perl 5.006002
+  HTTP-Headers-Fast-0.16
+    pathname: T/TO/TOKUHIROM/HTTP-Headers-Fast-0.16.tar.gz
+    provides:
+      HTTP::Headers::Fast 0.16
+    requirements:
+      HTTP::Date 0
+      Module::Build 0.38
+      Test::More 0.98
+      Test::Requires 0
+      perl 5.00800
   HTTP-Message-6.06
     pathname: G/GA/GAAS/HTTP-Message-6.06.tar.gz
     provides:
