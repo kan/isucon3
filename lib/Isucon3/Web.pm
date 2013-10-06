@@ -61,16 +61,17 @@ filter 'session' => sub {
     };
 };
 
+my %users;
 sub _user {
     my ($self, $user_id) = @_;
     return unless $user_id;
-    my $user = $self->cache->get("user_$user_id");
+    my $user = $users{$user_id};
     unless ($user) {
         $user = $self->dbh->select_row(
             'SELECT * FROM users WHERE id=?',
             $user_id,
         );
-        $self->cache->set("user_$user_id" => $user);
+        $users{$user_id} = $user;
     }
     return $user;
 }
