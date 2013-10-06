@@ -16,6 +16,8 @@ use Text::Markdown::Discount 'markdown';
 use Cache::Memcached::Fast;
 use Data::Dump qw/dump/;
 
+my %uri_for;
+
 my $_config;
 sub load_config {
     my $self = shift;
@@ -144,6 +146,7 @@ get '/' => [qw(session get_user)] => sub {
         memos => $memos,
         page  => 0,
         total => $self->_total,
+        uri_for => sub { $uri_for{$_[0]} //= $c->req->uri_for($_[0]) },
     });
 };
 
@@ -167,12 +170,15 @@ get '/recent/:page' => [qw(session get_user)] => sub {
         memos => $memos,
         page  => $page,
         total => $self->_total,
+        uri_for => sub { $uri_for{$_[0]} //= $c->req->uri_for($_[0]) },
     });
 };
 
 get '/signin' => sub {
     my ($self, $c) = @_;
-    $c->render('signin.tx', {});
+    $c->render('signin.tx', {
+        uri_for => sub { $uri_for{$_[0]} //= $c->req->uri_for($_[0]) },
+    });
 };
 
 post '/signout' => [qw(session get_user require_user anti_csrf)] => sub {
@@ -229,7 +235,9 @@ post '/signin' => [qw(session)] => sub {
         return $c->redirect('/mypage');
     }
     else {
-        $c->render('signin.tx', {});
+        $c->render('signin.tx', {
+            uri_for => sub { $uri_for{$_[0]} //= $c->req->uri_for($_[0]) },
+        });
     }
 };
 
@@ -244,7 +252,10 @@ get '/mypage' => [qw(session get_user require_user)] => sub {
         );
         $self->cache->set('mypage_' . $c->stash->{user}->{id} => $memos);
     }
-    $c->render('mypage.tx', { memos => $memos });
+    $c->render('mypage.tx', {
+        memos => $memos,
+        uri_for => sub { $uri_for{$_[0]} //= $c->req->uri_for($_[0]) },
+    });
 };
 
 post '/memo' => [qw(session get_user require_user anti_csrf)] => sub {
@@ -317,6 +328,7 @@ get '/memo/:id' => [qw(session get_user)] => sub {
         memo  => $memo,
         older => $older,
         newer => $newer,
+        uri_for => sub { $uri_for{$_[0]} //= $c->req->uri_for($_[0]) },
     });
 };
 

@@ -3,13 +3,13 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
 <title>Isucon3</title>
-<link rel="stylesheet" href="<: $c.req.uri_for('/css/bootstrap.min.css') :>">
+<link rel="stylesheet" href="<: $uri_for('/css/bootstrap.min.css') :>">
 <style>
 body {
   padding-top: 60px;
 }
 </style>
-<link rel="stylesheet" href="<: $c.req.uri_for('/css/bootstrap-responsive.min.css') :>">
+<link rel="stylesheet" href="<: $uri_for('/css/bootstrap-responsive.min.css') :>">
 <link rel="stylesheet" href="/">
 </head>
 <body>
@@ -21,20 +21,20 @@ body {
 <span class="icon-bar"></span>
 <span class="icon-bar"></span>
 </a>
-<a class="brand" href="<: $c.req.uri_for('/') :>">Isucon3</a>
+<a class="brand" href="<: $uri_for('/') :>">Isucon3</a>
 <div class="nav-collapse">
 <ul class="nav">
-<li><a href="<: $c.req.uri_for('/') :>">Home</a></li>
+<li><a href="<: $uri_for('/') :>">Home</a></li>
 : if $c.stash.user {
-<li><a href="<: $c.req.uri_for('/mypage') :>">MyPage</a></li>
+<li><a href="<: $uri_for('/mypage') :>">MyPage</a></li>
 <li>
-  <form action="<: $c.req.uri_for('/signout') :>" method="post">
+  <form action="<: $uri_for('/signout') :>" method="post">
     <input type="hidden" name="sid" value="<: $c.stash.session.token :>">
     <input type="submit" value="SignOut">
   </form>
 </li>
 : } else {
-<li><a href="<: $c.req.uri_for('/signin') :>">SignIn</a></li>
+<li><a href="<: $uri_for('/signin') :>">SignIn</a></li>
 : }
 </ul>
 </div> <!--/.nav-collapse -->
@@ -49,8 +49,8 @@ body {
 
 </div> <!-- /container -->
 
-<script type="text/javascript" src="<: $c.req.uri_for('/js/jquery.min.js') :>"></script>
-<script type="text/javascript" src="<: $c.req.uri_for('/js/bootstrap.min.js') :>"></script>
+<script type="text/javascript" src="<: $uri_for('/js/jquery.min.js') :>"></script>
+<script type="text/javascript" src="<: $uri_for('/js/bootstrap.min.js') :>"></script>
 </body>
 </html>
 
