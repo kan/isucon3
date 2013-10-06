@@ -135,11 +135,15 @@ get '/recent/:page' => [qw(session get_user)] => sub {
     my $total = $self->dbh->select_one(
         'SELECT count(*) FROM memos WHERE is_private=0'
     );
-    my $memos = $self->dbh->select_all(
-        sprintf("SELECT * FROM memos WHERE is_private=0 ORDER BY created_at DESC, id DESC LIMIT 100 OFFSET %d", $page * 100)
-    );
-    if ( @$memos == 0 ) {
-        return $c->halt(404);
+    my $memos = $self->cache->get("recent_$page");
+    unless ($memos) {
+        $memos = $self->dbh->select_all(
+            sprintf("SELECT * FROM memos WHERE is_private=0 ORDER BY created_at DESC, id DESC LIMIT 100 OFFSET %d", $page * 100)
+        );
+        if ( @$memos == 0 ) {
+            return $c->halt(404);
+        }
+        $self->cache->set("recent_$page" => $memos);
     }
 
     for my $memo (@$memos) {
@@ -218,10 +222,14 @@ post '/signin' => [qw(session)] => sub {
 get '/mypage' => [qw(session get_user require_user)] => sub {
     my ($self, $c) = @_;
 
-    my $memos = $self->dbh->select_all(
-        'SELECT id, content, is_private, created_at, updated_at FROM memos WHERE user=? ORDER BY created_at DESC',
-        $c->stash->{user}->{id},
-    );
+    my $memos = $self->cache->get('mypage_' . $c->stash->{user}->{id});
+    unless ($memos) {
+        $memos = $self->dbh->select_all(
+            'SELECT id, content, is_private, created_at, updated_at FROM memos WHERE user=? ORDER BY created_at DESC',
+            $c->stash->{user}->{id},
+        );
+        $self->cache->set('mypage_' . $c->stash->{user}->{id} => $memos);
+    }
     $c->render('mypage.tx', { memos => $memos });
 };
 
