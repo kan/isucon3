@@ -76,6 +76,18 @@ sub _user {
     return $user;
 }
 
+sub _total {
+    my $self = shift;
+    my $total = $self->cache->get('total_memos');
+    unless($total) {
+        $total = $self->dbh->select_one(
+            'SELECT count(*) FROM memos WHERE is_private=0'
+        );
+        $self->cache->set(total_memos => $total);
+    }
+    return $total;
+}
+
 filter 'get_user' => sub {
     my ($app) = @_;
     sub {
@@ -115,9 +127,6 @@ filter 'anti_csrf' => sub {
 get '/' => [qw(session get_user)] => sub {
     my ($self, $c) = @_;
 
-    my $total = $self->dbh->select_one(
-        'SELECT count(*) FROM memos WHERE is_private=0'
-    );
     my $memos = $self->dbh->select_all(
         'SELECT * FROM memos WHERE is_private=0 ORDER BY created_at DESC, id DESC LIMIT 100',
     );
@@ -127,16 +136,13 @@ get '/' => [qw(session get_user)] => sub {
     $c->render('index.tx', {
         memos => $memos,
         page  => 0,
-        total => $total,
+        total => $self->_total,
     });
 };
 
 get '/recent/:page' => [qw(session get_user)] => sub {
     my ($self, $c) = @_;
     my $page  = int $c->args->{page};
-    my $total = $self->dbh->select_one(
-        'SELECT count(*) FROM memos WHERE is_private=0'
-    );
     my $memos = $self->cache->get("recent_$page");
     unless ($memos) {
         $memos = $self->dbh->select_all(
@@ -153,7 +159,7 @@ get '/recent/:page' => [qw(session get_user)] => sub {
     $c->render('index.tx', {
         memos => $memos,
         page  => $page,
-        total => $total,
+        total => $self->_total,
     });
 };
 
@@ -244,6 +250,7 @@ post '/memo' => [qw(session get_user require_user anti_csrf)] => sub {
         scalar($c->req->param('is_private')) ? 1 : 0,
     );
     my $memo_id = $self->dbh->last_insert_id;
+    $self->cache->incr('total_memos') unless scalar($c->req->param('is_private'));
     $c->redirect('/memo/' . $memo_id);
 };
 

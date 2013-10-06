@@ -10,6 +10,9 @@ use Cache::Memcached::Fast;
 
 my $root_dir = File::Basename::dirname(__FILE__);
 
+my $c = Cache::Memcached::Fast->new({ servers => ['localhost:11212'] });
+$c->remove('total_memos');
+
 my $app = Isucon3::Web->psgi($root_dir);
 builder {
     enable 'ReverseProxy';
