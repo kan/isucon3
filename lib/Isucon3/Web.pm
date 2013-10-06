@@ -60,22 +60,28 @@ filter 'session' => sub {
     };
 };
 
+sub _user {
+    my ($self, $user_id) = @_;
+    return unless $user_id;
+    my $user = $self->cache->get("user_$user_id");
+    unless ($user) {
+        $user = $self->dbh->select_row(
+            'SELECT * FROM users WHERE id=?',
+            $user_id,
+        );
+        $self->cache->set("user_$user_id" => $user);
+    }
+    return $user;
+}
+
 filter 'get_user' => sub {
     my ($app) = @_;
     sub {
         my ($self, $c) = @_;
 
         my $user_id = $c->req->env->{"psgix.session"}->{user_id};
-        my $user = $self->cache->get("user_$user_id");
-        unless ($user) {
-            $user = $self->dbh->select_row(
-                'SELECT * FROM users WHERE id=?',
-                $user_id,
-            );
-            $self->cache->set("user_$user_id" => $user);
-        }
-        $c->stash->{user} = $user;
-        $c->res->header('Cache-Control', 'private') if $user;
+        $c->stash->{user} = $self->_user($user_id);
+        $c->res->header('Cache-Control', 'private') if $c->stash->{user};
         $app->($self, $c);
     }
 };
@@ -114,10 +120,7 @@ get '/' => [qw(session get_user)] => sub {
         'SELECT * FROM memos WHERE is_private=0 ORDER BY created_at DESC, id DESC LIMIT 100',
     );
     for my $memo (@$memos) {
-        $memo->{username} = $self->dbh->select_one(
-            'SELECT username FROM users WHERE id=?',
-            $memo->{user},
-        );
+        $memo->{username} = $self->_user($memo->{user})->{username};
     }
     $c->render('index.tx', {
         memos => $memos,
@@ -140,10 +143,7 @@ get '/recent/:page' => [qw(session get_user)] => sub {
     }
 
     for my $memo (@$memos) {
-        $memo->{username} = $self->dbh->select_one(
-            'SELECT username FROM users WHERE id=?',
-            $memo->{user},
-        );
+        $memo->{username} = $self->_user($memo->{user});
     }
     $c->render('index.tx', {
         memos => $memos,
@@ -184,6 +184,7 @@ post '/signup' => [qw(session anti_csrf)] => sub {
             $username, $password_hash, $salt,
         );
         my $user_id = $self->dbh->last_insert_id;
+        $self->cache->set("user_$user_id" => { username => $username, id => $user_id });
         $c->req->env->{"psgix.session"}->{user_id} = $user_id;
         $c->redirect('/mypage');
     }
@@ -254,10 +255,7 @@ get '/memo/:id' => [qw(session get_user)] => sub {
         }
     }
     $memo->{content_html} = markdown($memo->{content});
-    $memo->{username} = $self->dbh->select_one(
-        'SELECT username FROM users WHERE id=?',
-        $memo->{user},
-    );
+    $memo->{username} = $self->_user($memo->{user});
 
     my $cond;
     if ($user && $user->{id} == $memo->{user}) {
