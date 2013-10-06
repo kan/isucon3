@@ -12,6 +12,7 @@ use File::Temp qw/ tempfile /;
 use IO::Handle;
 use Encode;
 use Time::Piece;
+use Text::Markdown::Discount 'markdown';
 
 sub load_config {
     my $self = shift;
@@ -22,16 +23,6 @@ sub load_config {
         close($fh);
         decode_json($json);
     };
-}
-
-sub markdown {
-    my $content = shift;
-    my ($fh, $filename) = tempfile();
-    $fh->print(encode_utf8($content));
-    $fh->close;
-    my $html = qx{ ../bin/markdown $filename };
-    unlink $filename;
-    return $html;
 }
 
 sub dbh {
@@ -200,10 +191,10 @@ post '/signin' => [qw(session)] => sub {
         my $session = $c->req->env->{"psgix.session"};
         $session->{user_id} = $user->{id};
         $session->{token}   = sha256_hex(rand());
-        $self->dbh->query(
-            'UPDATE users SET last_access=now() WHERE id=?',
-            $user->{id},
-        );
+        #$self->dbh->query(
+        #    'UPDATE users SET last_access=now() WHERE id=?',
+        #    $user->{id},
+        #);
         return $c->redirect('/mypage');
     }
     else {

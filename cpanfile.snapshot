@@ -1043,6 +1043,12 @@ DISTRIBUTIONS
       Test::Exception 0
       Test::More 0.42
       Text::Balanced 0
+  Text-Markdown-Discount-0.10
+    pathname: S/SE/SEKIMURA/Text-Markdown-Discount-0.10.tar.gz
+    provides:
+      Text::Markdown::Discount 0.10
+    requirements:
+      ExtUtils::MakeMaker 0
   Text-Xslate-2.0009
     pathname: G/GF/GFUJI/Text-Xslate-2.0009.tar.gz
     provides:
