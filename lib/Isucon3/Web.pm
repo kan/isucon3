@@ -14,6 +14,7 @@ use Encode;
 use Time::Piece;
 use Text::Markdown::Discount 'markdown';
 use Cache::Memcached::Fast;
+use Data::Dump qw/dump/;
 
 sub load_config {
     my $self = shift;
@@ -45,7 +46,7 @@ sub dbh {
 sub cache {
     my ($self) = @_;
     $self->{_cache} ||= do {
-        Cache::Memcached::Fast->new({ servers => ['localhost:11211'] });
+        Cache::Memcached::Fast->new({ servers => ['localhost:11212'] });
     };
 }
 
@@ -136,6 +137,7 @@ get '/recent/:page' => [qw(session get_user)] => sub {
         'SELECT count(*) FROM memos WHERE is_private=0'
     );
     my $memos = $self->cache->get("recent_$page");
+    warn dump $memos if $memos;
     unless ($memos) {
         $memos = $self->dbh->select_all(
             sprintf("SELECT * FROM memos WHERE is_private=0 ORDER BY created_at DESC, id DESC LIMIT 100 OFFSET %d", $page * 100)
