@@ -16,9 +16,10 @@ use Text::Markdown::Discount 'markdown';
 use Cache::Memcached::Fast;
 use Data::Dump qw/dump/;
 
+my $_config;
 sub load_config {
     my $self = shift;
-    $self->{_config} ||= do {
+    $_config ||= do {
         my $env = $ENV{ISUCON_ENV} || 'local';
         open(my $fh, '<', $self->root_dir . "/../config/${env}.json") or die $!;
         my $json = do { local $/; <$fh> };
@@ -27,9 +28,10 @@ sub load_config {
     };
 }
 
+my $_dbh;
 sub dbh {
     my ($self) = @_;
-    $self->{_dbh} ||= do {
+    $_dbh ||= do {
         my $dbconf = $self->load_config->{database};
         DBIx::Sunny->connect(
             "dbi:mysql:database=${$dbconf}{dbname};host=${$dbconf}{host};port=${$dbconf}{port}", $dbconf->{username}, $dbconf->{password}, {
@@ -43,9 +45,10 @@ sub dbh {
     };
 }
 
+my $_cache;
 sub cache {
     my ($self) = @_;
-    $self->{_cache} ||= do {
+    $_cache ||= do {
         Cache::Memcached::Fast->new({ servers => ['localhost:11212'] });
     };
 }
