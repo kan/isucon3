@@ -257,9 +257,16 @@ post '/memo' => [qw(session get_user require_user anti_csrf)] => sub {
         scalar($c->req->param('is_private')) ? 1 : 0,
     );
     my $memo_id = $self->dbh->last_insert_id;
-    $self->cache->incr('total_memos') unless scalar($c->req->param('is_private'));
-    $self->cache->remove('index');
-    $self->cache->set('memo_' . $memo_id => { id => $memo_id, user => $c->stash->{user}->{id}, content => scalar $c->req->param('content'), is_private => scalar($c->req->param('is_private')) ? 1 : 0, created_at => ''});
+    my $memo = { id => $memo_id, user => $c->stash->{user}->{id}, content => scalar $c->req->param('content'), is_private => scalar($c->req->param('is_private')) ? 1 : 0, created_at => ''};
+    unless (scalar($c->req->param('is_private'))) {
+        $self->cache->incr('total_memos');
+        if (my $memos = $self->cache->get('index')) {
+            unshift @$memos, $memo;
+            pop @$memos if scalar(@$memos) > 100;
+            $self->cache->set('index' => $memos);
+        }
+    }
+    $self->cache->set('memo_' . $memo_id => $memo);
     $c->redirect('/memo/' . $memo_id);
 };
 
