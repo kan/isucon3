@@ -132,22 +132,29 @@ filter 'anti_csrf' => sub {
 get '/' => [qw(session get_user)] => sub {
     my ($self, $c) = @_;
 
-    my $memos = $self->cache->get('index');
-    unless ($memos) {
-        $memos = $self->dbh->select_all(
+    my $html = $self->cache->get('index_html');
+    unless ($html) {
+        my $memos = $self->dbh->select_all(
             'SELECT * FROM memos WHERE is_private=0 ORDER BY created_at DESC, id DESC LIMIT 100',
         );
         for my $memo (@$memos) {
             $memo->{username} = $self->_user($memo->{user})->{username};
         }
-        $self->cache->set('index' => $memos);
+        $html = $c->tx->render('index.tx', {
+            c => $c,
+            stash => $c->stash,
+            memos => $memos,
+            page  => 0,
+            uri_for => sub { $uri_for{$_[0]} //= $c->req->uri_for($_[0]) },
+        });
+        $self->cache->set('index_html' => $html);
     }
-    $c->render('index.tx', {
-        memos => $memos,
-        page  => 0,
-        total => $self->_total,
-        uri_for => sub { $uri_for{$_[0]} //= $c->req->uri_for($_[0]) },
-    });
+    my $total = $self->_total;
+    $html =~ s/%%total%%/$total/g;
+    $c->res->status( 200 );
+    $c->res->content_type('text/html; charset=UTF-8');
+    $c->res->body( $html );
+    $c->res;
 };
 
 get '/recent/:page' => [qw(session get_user)] => sub {
@@ -278,6 +285,7 @@ post '/memo' => [qw(session get_user require_user anti_csrf)] => sub {
         }
     }
     $self->cache->set('memo_' . $memo_id => $memo);
+    $self->cache->remove('index_html');
     $c->redirect('/memo/' . $memo_id);
 };
 
