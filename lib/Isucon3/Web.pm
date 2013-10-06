@@ -144,11 +144,10 @@ get '/recent/:page' => [qw(session get_user)] => sub {
         if ( @$memos == 0 ) {
             return $c->halt(404);
         }
+        for my $memo (@$memos) {
+            $memo->{username} = $self->_user($memo->{user})->{username};
+        }
         $self->cache->set("recent_$page" => $memos);
-    }
-
-    for my $memo (@$memos) {
-        $memo->{username} = $self->_user($memo->{user});
     }
     $c->render('index.tx', {
         memos => $memos,
