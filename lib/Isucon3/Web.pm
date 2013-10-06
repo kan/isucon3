@@ -127,11 +127,15 @@ filter 'anti_csrf' => sub {
 get '/' => [qw(session get_user)] => sub {
     my ($self, $c) = @_;
 
-    my $memos = $self->dbh->select_all(
-        'SELECT * FROM memos WHERE is_private=0 ORDER BY created_at DESC, id DESC LIMIT 100',
-    );
-    for my $memo (@$memos) {
-        $memo->{username} = $self->_user($memo->{user})->{username};
+    my $memos = $self->cache->get('index');
+    unless ($memos) {
+        $memos = $self->dbh->select_all(
+            'SELECT * FROM memos WHERE is_private=0 ORDER BY created_at DESC, id DESC LIMIT 100',
+        );
+        for my $memo (@$memos) {
+            $memo->{username} = $self->_user($memo->{user})->{username};
+        }
+        $self->cache->set('index' => $memos);
     }
     $c->render('index.tx', {
         memos => $memos,
@@ -251,6 +255,7 @@ post '/memo' => [qw(session get_user require_user anti_csrf)] => sub {
     );
     my $memo_id = $self->dbh->last_insert_id;
     $self->cache->incr('total_memos') unless scalar($c->req->param('is_private'));
+    $self->cache->remove('index');
     $c->redirect('/memo/' . $memo_id);
 };
 
