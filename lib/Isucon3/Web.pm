@@ -145,6 +145,7 @@ get '/' => [qw(session get_user)] => sub {
             stash => $c->stash,
             memos => $memos,
             page  => 0,
+            total => '%%total%%',
             uri_for => sub { $uri_for{$_[0]} //= $c->req->uri_for($_[0]) },
         });
         $self->cache->set('index_html' => $html);
